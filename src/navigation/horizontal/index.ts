@@ -10,8 +10,8 @@ export default [
     icon: { icon: 'ri-file-text-line' },
   },
   {
-    title: 'Parts',
-    to: { name: 'parts' },
-    icon: { icon: 'ri-tools-line' },
+    title: 'Part Orders',
+    to: { name: 'part-orders' },
+    icon: { icon: 'ri-file-text-line' },
   },
 ]

@@ -9,4 +9,9 @@ export default [
     to: { name: 'repair-orders' },
     icon: { icon: 'ri-file-text-line' },
   },
+  {
+    title: 'Part Orders',
+    to: { name: 'part-orders' },
+    icon: { icon: 'ri-file-text-line' },
+  },
 ]

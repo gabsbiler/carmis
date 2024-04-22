@@ -5,6 +5,7 @@ import { client } from '@/composables/useDirectus'
 const repairOrders = ref()
 const AppLoadingIndicatorRef = ref()
 const loading = ref(false)
+const router = useRouter()
 
 const tableSettings = ref({
   itemsPerPage: 15,
@@ -101,12 +102,16 @@ const deleteOrder = async (id: number) => {
           Repair Orders
         </h6>
         <VSpacer />
-        <AddRepairOrderDialog @repair-order-saved="fetchOrders(tableSettings)" />
+        <VBtn
+          class="mx-3"
+          @click="router.push('/repair-orders/add')"
+        >
+          Add Repair Order
+        </VBtn>
         <VTextField
           v-model="tableSettings.search"
           label="Search Repair No."
           style="max-inline-size: 15rem;"
-          class="mx-1"
           @input="fetchOrders(tableSettings)"
         />
       </VCardTitle>
@@ -126,6 +131,20 @@ const deleteOrder = async (id: number) => {
               : item.type_of_service === '2' ? "GJ"
                 : item.type_of_service === '3' ? "BP" : ""
             }}
+          </template>
+
+          <template #item.status="{ item }">
+            <VChip
+              :color="item.status === 'finished' ? 'success'
+                : item.status === 'processing' ? 'secondary'
+                  : item.status === 'pending' ? 'warning'
+                    : ''"
+            >
+              {{ item.status === 'pending' ? 'Pending'
+                : item.status === 'finished' ? 'Finished'
+                  : item.status === 'processing' ? 'Processing'
+                    : '' }}
+            </VChip>
           </template>
 
           <template #item.type_of_client="{ item }">
@@ -149,6 +168,7 @@ const deleteOrder = async (id: number) => {
               variant="text"
               icon="ri-eye-line"
               density="compact"
+              @click="router.push(`/repair-orders/${item.id}`)"
             />
             <VBtn
               variant="text"

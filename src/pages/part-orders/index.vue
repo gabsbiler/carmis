@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { aggregate, readItems } from '@directus/sdk'
+import { aggregate, deleteItem, readItems } from '@directus/sdk'
 import { client } from '@/composables/useDirectus'
 
 const partsOrders = ref()
 const loading = ref(false)
+const router = useRouter()
 
 const headers = [
 
@@ -54,6 +55,7 @@ const fetchParts = async (options: object) => {
         limit: options.itemsPerPage,
         page: options.page,
         search: options.search,
+        fields: ['*', 'part.*'],
       }),
     )
 
@@ -68,6 +70,18 @@ const fetchParts = async (options: object) => {
   }
   finally {
     loading.value = false
+  }
+}
+
+const deletePartOrder = async (id: number) => {
+  try {
+    const response = await client.request(deleteItem('PartOrders', id))
+
+    console.log(response)
+    fetchParts(tableSettings.value)
+  }
+  catch (e) {
+    console.log(e)
   }
 }
 </script>
@@ -87,7 +101,9 @@ const fetchParts = async (options: object) => {
             v-model="tableSettings.search"
             label="Search"
           />
-          <AddPartOrders />
+          <div>
+            <AddPartOrdersDialog @part-order-saved="fetchParts(tableSettings)" />
+          </div>
         </div>
       </VCardTitle>
       <VCardText>
@@ -99,7 +115,33 @@ const fetchParts = async (options: object) => {
           :search="tableSettings.search"
           :loading="loading"
           @update:options="fetchParts"
-        />
+        >
+          <template #item.status="{ item }">
+            <VChip
+              :color="item.status === 'arrived' ? 'success'
+                : item.status === 'waiting' ? 'warning'
+                  : ''"
+            >
+              {{ item.status === 'arrived' ? 'Arrived'
+                : item.status === 'waiting' ? 'Waiting'
+                  : '' }}
+            </VChip>
+          </template>
+          <template #item.actions="{ item }">
+            <VBtn
+              variant="text"
+              icon="ri-eye-line"
+              density="compact"
+              @click="router.push(`/part-orders/${item.id}`)"
+            />
+            <VBtn
+              variant="text"
+              icon="ri-delete-bin-line"
+              density="compact"
+              @click="deletePartOrder(item.id)"
+            />
+          </template>
+        </VDataTableServer>
       </VCardText>
     </VCard>
   </div>

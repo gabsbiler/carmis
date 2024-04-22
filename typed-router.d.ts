@@ -42,9 +42,13 @@ declare module 'vue-router/auto/routes' {
     'root': RouteRecordInfo<'root', '/', Record<never, never>, Record<never, never>>,
     '$error': RouteRecordInfo<'$error', '/:error(.*)', { error: ParamValue<true> }, { error: ParamValue<false> }>,
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
+    'part': RouteRecordInfo<'part', '/part', Record<never, never>, Record<never, never>>,
+    'part-id': RouteRecordInfo<'part-id', '/part/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'part-orders': RouteRecordInfo<'part-orders', '/part-orders', Record<never, never>, Record<never, never>>,
-    'parts': RouteRecordInfo<'parts', '/parts', Record<never, never>, Record<never, never>>,
+    'part-orders-id': RouteRecordInfo<'part-orders-id', '/part-orders/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'repair-orders': RouteRecordInfo<'repair-orders', '/repair-orders', Record<never, never>, Record<never, never>>,
+    'repair-orders-id': RouteRecordInfo<'repair-orders-id', '/repair-orders/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'repair-orders-add': RouteRecordInfo<'repair-orders-add', '/repair-orders/add', Record<never, never>, Record<never, never>>,
   }
 }
 
