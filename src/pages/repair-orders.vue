@@ -1,35 +1,96 @@
 <script setup lang="ts">
-import { readItems } from '@directus/sdk'
+import { aggregate, deleteItem, readItems } from '@directus/sdk'
 import { client } from '@/composables/useDirectus'
 
 const repairOrders = ref()
 const AppLoadingIndicatorRef = ref()
+const loading = ref(false)
 
-const fetchOrders = async () => {
-  AppLoadingIndicatorRef.value.fallbackHandle()
+const tableSettings = ref({
+  itemsPerPage: 15,
+  itemLength: 0,
+  search: '',
+  page: 1,
+})
+
+const headers = [
+  {
+    title: 'Repair No.',
+    key: 'repair_no',
+  },
+  {
+    title: 'Service Tye',
+    key: 'type_of_service',
+  },
+  {
+    title: 'Client Type',
+    key: 'type_of_client',
+  },
+  {
+    title: 'Status',
+    key: 'status',
+  },
+  {
+    title: 'Vehicle Identication No',
+    key: 'vehicle_identification_number',
+  },
+  {
+    title: 'Customer Name',
+    key: 'customer_name',
+  },
+  {
+    title: 'Contact No.',
+    key: 'customer_number',
+  },
+  {
+    title: 'Actions',
+    key: 'actions',
+  },
+]
+
+const fetchOrders = async (options: object) => {
+  loading.value = true
   try {
-    const response = await client.request(
-      readItems('RepairOrders', {
-        fields: ['*', {
-          customer_details: ['*'],
-          car_details: ['*'],
-        }],
+    const count = await client.request(
+      aggregate('RepairOrders', {
+        aggregate: { count: '*' },
       }),
     )
 
+    const response = await client.request(
+      readItems('RepairOrders', {
+        limit: options.itemsPerPage,
+        page: options.page,
+        search: options.search,
+        fields: ['*', 'customer_details.*'],
+      }),
+    )
+
+    console.log(response)
+
+    tableSettings.value.itemLength = count[0].count
+
     repairOrders.value = response
   }
-  catch (error) {
-    console.log(error)
+  catch (e) {
+    console.log(e)
   }
   finally {
-    AppLoadingIndicatorRef.value.resolveHandle()
+    loading.value = false
   }
 }
 
-onMounted(() => {
-  fetchOrders()
-})
+const deleteOrder = async (id: number) => {
+  try {
+    const response = await client.request(deleteItem('RepairOrders', id))
+
+    console.log(response)
+    fetchOrders(tableSettings.value)
+  }
+  catch (e) {
+    console.log(e)
+  }
+}
 </script>
 
 <template>
@@ -40,83 +101,63 @@ onMounted(() => {
           Repair Orders
         </h6>
         <VSpacer />
-        <AddRepairOrderDialog @repair-order-saved="fetchOrders" />
+        <AddRepairOrderDialog @repair-order-saved="fetchOrders(tableSettings)" />
         <VTextField
+          v-model="tableSettings.search"
           label="Search Repair No."
           style="max-inline-size: 15rem;"
           class="mx-1"
+          @input="fetchOrders(tableSettings)"
         />
       </VCardTitle>
       <VCardText>
-        <VRow>
-          <VCol
-            v-for="order in repairOrders"
-            :key="order.repairNo"
-            cols="12"
-            lg="4"
-            md="6"
-          >
-            <VCard>
-              <VCardTitle class="d-flex justify-space-between">
-                <div>
-                  {{ order.repair_no }}
-                </div>
-                <div style="text-transform: capitalize;">
-                  {{ order.status }}
-                </div>
-              </VCardTitle>
-              <VCardText>
-                <div>
-                  Type of Service: {{
-                    order.type_of_service === '1' ? "EM"
-                    : order.type_of_service === '2' ? "GJ"
-                      : order.type_of_service === '3' ? "BP" : ""
-                  }}
-                </div>
-                <div>
-                  Type of Client: {{
-                    order.type_of_client === '1' ? "Appointment"
-                    : order.type_of_client === '2' ? "Walk-in"
-                      : order.type_of_client === '3' ? "Non-Waiting" : ""
-                  }}
-                </div>
-                <div>
-                  Vehicle Identication No.: {{ order.vehicle_identification_number }}
-                </div>
-                <VDivider class="my-3" />
-                <div>
-                  Customer Name: {{ order.customer_details ? order.customer_details.name : 'Not Available' }}
-                </div>
-                <div>
-                  Contact No.: {{ order.customer_details ? order.customer_details.contact_number : 'Not Available' }}
-                </div>
-                <div>
-                  Customer Request: {{ order.customer_request }}
-                </div>
-              </VCardText>
-              <VCardActions>
-                <VSpacer />
-                <VBtn
-                  icon="ri-delete-bin-line"
-                  density="compact"
-                />
+        <VDataTableServer
+          v-model:items-per-page="tableSettings.itemsPerPage"
+          :headers="headers"
+          :items="repairOrders"
+          :items-length="tableSettings.itemLength"
+          :search="tableSettings.search"
+          :loading="loading"
+          @update:options="() => fetchOrders(tableSettings)"
+        >
+          <template #item.type_of_service="{ item }">
+            {{
+              item.type_of_service === '1' ? "EM"
+              : item.type_of_service === '2' ? "GJ"
+                : item.type_of_service === '3' ? "BP" : ""
+            }}
+          </template>
 
-                <!--
-                  <VBtn
-                  icon="ri-edit-box-line"
-                  density="compact"
-                  />
-                -->
-                <!--
-                  <VBtn
-                  icon="ri-file-info-line"
-                  density="compact"
-                  />
-                -->
-              </VCardActions>
-            </VCard>
-          </VCol>
-        </VRow>
+          <template #item.type_of_client="{ item }">
+            {{
+              item.type_of_client === '1' ? "Appointment"
+              : item.type_of_client === '2' ? "Walk-in"
+                : item.type_of_client === '3' ? "Non-Waiting" : ""
+            }}
+          </template>
+
+          <template #item.customer_name="{ item }">
+            {{ item.customer_details ? item.customer_details.name : '' }}
+          </template>
+
+          <template #item.customer_number="{ item }">
+            {{ item.customer_details ? item.customer_details.contact_number : '' }}
+          </template>
+
+          <template #item.actions="{ item }">
+            <VBtn
+              variant="text"
+              icon="ri-eye-line"
+              density="compact"
+            />
+            <VBtn
+              variant="text"
+              icon="ri-delete-bin-line"
+              density="compact"
+              @click="deleteOrder(item.id)"
+            />
+          </template>
+        </VDataTableServer>
       </VCardText>
     </VCard>
 
